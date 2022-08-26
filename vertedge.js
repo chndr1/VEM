@@ -1,8 +1,121 @@
+class Component {
+    constructor(vertices, edges){
+        this.vertices = vertices;
+        this.edges = edges;
+        console.log("VERTICES");
+        console.log(vertices);
+        console.log("EDGES");
+        console.log(edges);
+        this.vertexMap = {};
+        for(var i = 0; i < vertices.length; i++){
+          this.vertexMap[vertices[i].id] = i;
+        }
+        this.adj = new Array(vertices.length);
+        for(var i = 0; i < vertices.length; i++){
+          this.adj[i] = new Array(vertices.length).fill(0)
+        }
+        for(var i = 0; i < edges.length; i++){
+          var edge = edges[i];
+          const v1 = this.vertexMap[edge.v1.id];
+          const v2 = this.vertexMap[edge.v2.id];
+          this.adj[v1][v2] = 1;
+          this.adj[v2][v1] = 1;
+        }
+    }
+    hasCycle(src){
+      var stack = [src];
+      var vis = Array(this.vertices).fill(0);
+      vis[src] = 1;
+      while(stack.length > 0){
+        var node = stack.pop();
+        if(vis[node] === 1) return false;
+        vis[node] = 1;
+        for(var i = 0; i < this.vertices.length; i++){
+          if(this.adj[node][i] === 1){
+            stack.push(i);
+          }
+        }
+      }
+      return vis;
+    }
+    isTree(){
+      var ans = True;
+      
+    }
+    isDag(){
+        return;
+    }
+    rootedTree(){
+        return;
+    }
+    straightLine(){
+        return;
+    }
+    planarization(){
+        return;
+    }
+    dag(){
+        return;
+    }
+    dynamicAlgorithm(){
+        return;
+    }
+}
+class FormatGraph {
+    constructor(vertices, edges){
+        this.vertices = vertices;
+        this.edges = edges;
+        console.log("VERTICES");
+        console.log(vertices);
+        console.log("EDGES");
+        console.log(edges);
+        this.vertexMap = {};
+        for(var i = 0; i < vertices.length; i++){
+          this.vertexMap[vertices[i].id] = i;
+        }
+        this.adj = new Array(vertices.length);
+        for(var i = 0; i < vertices.length; i++){
+          this.adj[i] = new Array(vertices.length).fill(0)
+        }
+        for(var i = 0; i < edges.length; i++){
+          var edge = edges[i];
+          const v1 = this.vertexMap[edge.v1.id];
+          const v2 = this.vertexMap[edge.v2.id];
+          this.adj[v1][v2] = 1;
+          this.adj[v2][v1] = 1;
+        }
+    }
+
+}
+
 class Vertedge extends Apper {
 
   get dragging() { return this.drag !== null; }
   get grid() { return {x: this.widget.gridWidth.value, y: this.widget.gridHeight.value}; }
-
+  formatGraph(format){
+    const fg = new FormatGraph(this.vertices, this.edges);
+    switch(format){
+      case "Rooted Tree":
+        fg.rootedTree();
+        break;
+      case "Straight-Line":
+        fg.straightLine();
+        break;
+      case "Planarization":
+        fg.planarization();
+        break;
+      case "Directed-Acyclic Graph":
+        fg.dag();
+        break;
+      case "Dynamic Algorithm":
+        fg.dynamicAlgorithm();
+        break;
+      default:
+        break;
+    }
+    this.vertices = fg.vertices;
+    this.edges = fg.edges;
+  }
   constructor() {
     super();
 
@@ -19,10 +132,12 @@ class Vertedge extends Apper {
       .addTool(Vertedge.Tool.ERASE)
       .addTool(Vertedge.Tool.STYLE)
       .addTool(Vertedge.Tool.GRID)
+      .addTool(Vertedge.Tool.FORMAT)
       .addSpacer()
       .addTool(Vertedge.Tool.CAPTURE)
       .addTool(Vertedge.Tool.DATA)
       .addTool(Vertedge.Tool.LOAD)
+      
       .addTool(Vertedge.Tool.HELP);
 
     this.widget = {};
@@ -116,6 +231,7 @@ class Vertedge extends Apper {
           }
           this.update();
         }));
+    
 
     this.exampleURLs = [
       "examples/complete-4",
@@ -127,7 +243,23 @@ class Vertedge extends Apper {
       "Complete Graph: n = 5",
       "Complete Bipartite Graph: m = 3, n = 3"
     ];
+    this.formatStyles = [
+      "Rooted Tree",
+      "Straight-Line",
+      "Planarization",
+      "Directed-Acyclic Graph",
+      "Dynamic Algorithm"
+    ];
 
+
+    this.formatMenu = this.addMenu("Format Style")
+      .addSeparator()
+      .add(new Apper.Menu.ButtonList("", this.formatStyles, this.formatStyles)
+        .onChange(format => {
+          this.update();
+          this.formatGraph(format);
+          this.tool = this.toolbar.defaultTool;
+        }));
     this.loadMenu = this.addMenu("Load a Graph")
       .addSeparator()
       .add(new Apper.Menu.ButtonList("Example Graphs:", this.exampleURLs, this.exampleTitles)
@@ -316,6 +448,10 @@ class Vertedge extends Apper {
       this.dataMenu.show();
     } else this.dataMenu.hide();
 
+    if (this.tool == Vertedge.Tool.FORMAT) {
+      this.formatMenu.show()
+    }
+    else this.formatMenu.hide()
     if (this.tool === Vertedge.Tool.LOAD) this.loadMenu.show();
     else this.loadMenu.hide();
 
@@ -781,6 +917,7 @@ class Vertedge extends Apper {
       case "keyx": this.tool = Vertedge.Tool.ERASE; break;
       case "keys": this.tool = Vertedge.Tool.STYLE; break;
       case "keyg": this.tool = Vertedge.Tool.GRID; break;
+      case "keyr": this.tool = Vertedge.Tool.FORMAT; break;
       case "keyh": this.tool = Vertedge.Tool.HELP; break;
       case "keya":
         if (event.ctrlKey) return event.shiftKey ? this.deselectAll() : this.selectAll();
@@ -1058,6 +1195,7 @@ Vertedge.Tool = {
   ERASE:   new Apper.Tool("erase",   "Erase",     "icons/erase.svg",   "keyx", "x"),
   STYLE:   new Apper.Tool("style",   "Style",     "icons/style.svg",   "keys", "s"),
   GRID:    new Apper.Tool("grid",    "Grid",      "icons/grid.svg",    "keyg", "g"),
+  FORMAT:  new Apper.Tool("format",  "Format",    "icons/grid.svg",    "keyr", "r"),
   CAPTURE: new Apper.Tool("capture", "Capture",   "icons/capture.svg"),
   DATA:    new Apper.Tool("data",    "View Data", "icons/data.svg"),
   LOAD:    new Apper.Tool("load",    "Load",      "icons/load.svg"),
@@ -1110,6 +1248,19 @@ Vertedge.Vertex = class {
     this.lineWidth = 4;
     this.lineDash = [];
     this.shape = Vertedge.Shape.CIRCLE;
+    this.id = Math.floor(Math.random() * 10000).toString()
+  }
+
+  isEqual(v){
+    return 
+      this.x === v.x &&
+      this.y === v.y &&
+      this.r === v.r &&
+      this.fill === v.fill &&
+      this.stroke === v.stroke &&
+      this.lineWidth === v.lineWidth &&
+      this.lineDash === v.lineDash &&
+      this.shape === v.shape
   }
 
   path(ctx) {
